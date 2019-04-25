@@ -979,7 +979,7 @@ static void _roRdmaDoneHandler(envelope *env) {
           CmiDeregisterMem(buffAckInfo->ptr,
                            buffAckInfo->layerInfo +CmiGetRdmaCommonInfoSize(),
                            buffAckInfo->pe,
-                           buffAckInfo->mode);
+                           buffAckInfo->regMode);
         }
 
         if(roBcastAckInfo->isRoot != 1) {
