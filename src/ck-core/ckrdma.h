@@ -84,6 +84,15 @@ class CkNcpyBuffer{
   #pragma GCC diagnostic pop
   #endif
 
+
+  void checkRegModeIsValid() {
+    if(regMode < CK_BUFFER_REG || regMode > CK_BUFFER_NOREG) CmiAbort("checkRegModeIsValid: Invalid value for regMode!\n");
+  }
+
+  void checkDeregModeIsValid() {
+    if(deregMode < CK_BUFFER_DEREG || deregMode > CK_BUFFER_NODEREG) CmiAbort("checkDeregModeIsValid: Invalid value for deregMode!\n");
+  }
+
   public:
   // pointer to the buffer
   const void *ptr;
@@ -137,6 +146,12 @@ class CkNcpyBuffer{
     deregMode = deregMode_;
 
     isRegistered = false;
+
+    // Ensure that regMode is valid
+    checkRegModeIsValid();
+
+    // Ensure that deregMode is valid
+    checkDeregModeIsValid();
 
     // Register memory everytime new values are initialized
     if(cnt > 0)
