@@ -38,24 +38,24 @@ all: AMPI AMPIF $(COMPATLIB) $(ROMIO)
 # is done, in order to prevent ROMIO recompilation when AMPI changes.
 $(ROMIO): | AMPI AMPIF
 	@echo "Building ROMIO"
-	cd romio && \
-		MPI_LIB="" \
-		CFLAGS="$(OPTS) -ampi-romio-configure" \
-		FFLAGS="$(OPTS) -ampi-romio-configure" \
-		F77="$(CDIR)/bin/ampif90" \
-		CC="$(CDIR)/bin/ampicc" \
-		./configure \
-		--disable-aio \
-		--enable-f77=`test -f $(DESTF) && echo yes || echo no` \
+	cd romio &&                                                              \
+		MPI_LIB=""                                                           \
+		CFLAGS="$(OPTS) -ampi-romio-configure"                               \
+		FFLAGS="$(OPTS) -ampi-romio-configure"                               \
+		F77="$(CDIR)/bin/ampif90"                                            \
+		CC="$(CDIR)/bin/ampicc"                                              \
+		./configure                                                          \
+		--disable-aio                                                        \
+		--enable-f77=`test -f $(DESTF) && echo yes || echo no`               \
+		--enable-static=yes                                                  \
+		--enable-shared=`test -n "$(ROMIOLIBSHARED)" && echo yes || echo no` \
+		--disable-weak-symbols                                               \
 		--srcdir=`pwd`
 
 	cp romio/include/mpio.h romio/include/mpiof.h $(CDIR)/include
 	$(MAKE) -C romio
-	cp romio/lib/libmpio.a $@
-	if [ -n "$(ROMIOLIBSHARED)" ]; then \
-		echo "Building dynamic ROMIO library: $(ROMIOLIBSHARED)"; \
-		find romio/ -name \*.o -exec $(CHARMC) -o $(ROMIOLIBSHARED) {} + ; \
-	fi
+	cp romio/.libs/libromio.a $@
+	test -n "$(ROMIOLIBSHARED)" && cp romio/.libs/libromio.$(CMK_SHARED_SUF) $(ROMIOLIBSHARED) || true
 	@echo "ROMIO built successfully"
 
 AMPI: $(DEST)
