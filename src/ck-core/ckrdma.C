@@ -124,18 +124,7 @@ CkNcpyStatus CkNcpyBuffer::get(CkNcpyBuffer &source){
 #endif
   } else if (transferMode == CkNcpyMode::RDMA) {
 
-    int outstandingRdmaOps = 1; // used by true-RDMA layers
-
-#if CMK_ONESIDED_IMPL
-#if CMK_CONVERSE_MPI
-    outstandingRdmaOps += 1; // MPI layer invokes CmiDirectAckHandler twice as sender and receiver post separately
-#endif
-#else
-    outstandingRdmaOps += 1; // non-RDMA layers invoke CmiDirectAckHandler twice using regular messages
-#endif
-
-    // Create QD to ensure that outstanding rdmaGet call is accounted for
-    QdCreate(outstandingRdmaOps);
+    zcQdIncrement();
 
     rdmaGet(source);
 
@@ -256,18 +245,7 @@ CkNcpyStatus CkNcpyBuffer::put(CkNcpyBuffer &destination){
 #endif
   } else if (transferMode == CkNcpyMode::RDMA) {
 
-    int outstandingRdmaOps = 1; // used by true-RDMA layers
-
-#if CMK_ONESIDED_IMPL
-#if CMK_CONVERSE_MPI
-    outstandingRdmaOps += 1; // MPI layer invokes CmiDirectAckHandler twice as sender and receiver post separately
-#endif
-#else
-    outstandingRdmaOps += 1; // non-RDMA layers invoke CmiDirectAckHandler twice using regular messages
-#endif
-
-    // Create QD to ensure that outstanding rdmaGet call is accounted for
-    QdCreate(outstandingRdmaOps);
+    zcQdIncrement();
 
     rdmaPut(destination);
 
@@ -403,10 +381,10 @@ void invokeCallback(void *cb, int pe, CkNcpyBuffer &buff) {
 CkNcpyMode findTransferMode(int srcPe, int destPe) {
   if(CmiNodeOf(srcPe)==CmiNodeOf(destPe))
     return CkNcpyMode::MEMCPY;
-#if CMK_USE_CMA
-  else if(CmiDoesCMAWork() && CmiPeOnSamePhysicalNode(srcPe, destPe))
-    return CkNcpyMode::CMA;
-#endif
+//#if CMK_USE_CMA
+//  else if(CmiDoesCMAWork() && CmiPeOnSamePhysicalNode(srcPe, destPe))
+//    return CkNcpyMode::CMA;
+//#endif
   else
     return CkNcpyMode::RDMA;
 }
@@ -414,10 +392,10 @@ CkNcpyMode findTransferMode(int srcPe, int destPe) {
 CkNcpyMode findTransferModeWithNodes(int srcNode, int destNode) {
   if(srcNode==destNode)
     return CkNcpyMode::MEMCPY;
-#if CMK_USE_CMA
-  else if(CmiDoesCMAWork() && CmiPeOnSamePhysicalNode(CmiNodeFirst(srcNode), CmiNodeFirst(destNode)))
-    return CkNcpyMode::CMA;
-#endif
+//#if CMK_USE_CMA
+//  else if(CmiDoesCMAWork() && CmiPeOnSamePhysicalNode(CmiNodeFirst(srcNode), CmiNodeFirst(destNode)))
+//    return CkNcpyMode::CMA;
+//#endif
   else
     return CkNcpyMode::RDMA;
 }
@@ -438,6 +416,21 @@ void enqueueNcpyMessage(int destPe, void *msg){
 
 
 #if CMK_ONESIDED_IMPL
+inline void zcQdIncrement() {
+    int outstandingRdmaOps = 1; // used by true-RDMA layers
+
+#if CMK_ONESIDED_IMPL
+#if CMK_CONVERSE_MPI
+    outstandingRdmaOps += 1; // MPI layer invokes CmiDirectAckHandler twice as sender and receiver post separately
+#endif
+#else
+    outstandingRdmaOps += 1; // non-RDMA layers invoke CmiDirectAckHandler twice using regular messages
+#endif
+
+    // Create QD to ensure that outstanding rdmaGet call is accounted for
+    QdCreate(outstandingRdmaOps);
+}
+
 /*********************************** Zerocopy Entry Method API ****************************/
 // Integer used to store the ncpy ack handler idx
 static int ncpy_handler_idx;
@@ -1846,6 +1839,9 @@ void readonlyGet(CkNcpyBuffer &src, CkNcpyBuffer &dest, void *refPtr) {
     if(t.child_count != 0)
       readonlyCreateOnSource(dest);
 
+    CmiPrintf("[%d][%d][%d] Issuing Rget\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+    zcQdIncrement();
+
     CmiIssueRget(ncpyOpInfo);
   }
 }
@@ -1867,6 +1863,8 @@ void readonlyGetCompleted(NcpyOperationInfo *ncpyOpInfo) {
   // When all pending RO Rdma transfers are complete
   if(CksvAccess(_numPendingRORdmaTransfers) == 0) {
 
+    CmiPrintf("[%d][%d][%d] Rget completed\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+
     if(t.child_count != 0) {  // Intermediate Node
 
       envelope *env = (envelope *)(ncpyOpInfo->refPtr);
@@ -1879,6 +1877,7 @@ void readonlyGetCompleted(NcpyOperationInfo *ncpyOpInfo) {
     } else {
 
       // Send a message to the parent to signal completion in order to deregister
+      QdCreate(1);
       envelope *compEnv = _allocEnv(ROChildCompletionMsg);
       compEnv->setSrcPe(CkMyPe());
       CmiSetHandler(compEnv, _roRdmaDoneHandlerIdx);
@@ -1887,6 +1886,8 @@ void readonlyGetCompleted(NcpyOperationInfo *ncpyOpInfo) {
 
 #if CMK_SMP
     // Send a message to my first node to signal completion
+    QdCreate(1);
+    CmiPrintf("[%d][%d][%d] Sending a message to peers\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
     envelope *sigEnv = _allocEnv(ROPeerCompletionMsg);
     sigEnv->setSrcPe(CkMyPe());
     CmiSetHandler(sigEnv, _roRdmaDoneHandlerIdx);

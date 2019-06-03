@@ -579,6 +579,8 @@ void CkRdmaEMDeregAndAckHandler(void *ack);
 
 inline bool isDeregReady(CkNcpyBuffer &buffInfo);
 
+inline void zcQdIncrement();
+
 #endif /* End of CMK_ONESIDED_IMPL */
 
 #endif
