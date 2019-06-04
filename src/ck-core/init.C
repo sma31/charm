@@ -985,9 +985,9 @@ static void _roRdmaDoneHandler(envelope *env) {
 
   switch(env->getMsgtype()) {
     case ROPeerCompletionMsg:
-      CmiPrintf("[%d][%d][%d] Peer completion msg, RO Bcast completed\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+      //CmiPrintf("[%d][%d][%d] Peer completion msg, RO Bcast completed\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
       CpvAccess(_qd)->process();
-      CmiPrintf("[%d][%d][%d] &&&&&&& Calling checkForInitDone from _roRdmaDoneHandler\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+      //CmiPrintf("[%d][%d][%d] &&&&&&& Calling checkForInitDone from _roRdmaDoneHandler\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
       checkForInitDone(true); // Receiving a ROPeerCompletionMsg indicates that RO ZCPY Bcast
                               // operation is complete on the comm. thread
       if (env!=NULL) CmiFree(env);
@@ -1041,7 +1041,7 @@ void checkForInitDone(bool rdmaROCompleted) {
     noPendingRORdmaTransfers = rdmaROCompleted;
 #endif
   if (_numExpectInitMsgs && CkpvAccess(_numInitsRecd) + CksvAccess(_numInitNodeMsgs) == _numExpectInitMsgs && noPendingRORdmaTransfers) {
-    CmiPrintf("[%d][%d][%d] ****** Calling _initDone from checkForInitDone\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+    //CmiPrintf("[%d][%d][%d] ****** Calling _initDone from checkForInitDone rdmaROCompleted=%d, numZerocopyROops=%d, noPendingRORdmaTransfers=%d\n", CmiMyPe(), CmiMyNode(), CmiMyRank(), rdmaROCompleted, numZerocopyROops, noPendingRORdmaTransfers);
     _initDone();
   }
 }
@@ -1097,7 +1097,7 @@ static void _initHandler(void *msg, CkCoreState *ck)
       break;
     case RODataMsg: // Readonly Data Message (for user declared readonly variables)
       CkpvAccess(_numInitsRecd)++;
-      CmiPrintf("[%d][%d][%d] RODataMsg Decrementing QD\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+      //CmiPrintf("[%d][%d][%d] RODataMsg Decrementing QD\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
       CpvAccess(_qd)->process();
       _numExpectInitMsgs = env->getCount();
       _processRODataMsg(env);
@@ -1106,7 +1106,7 @@ static void _initHandler(void *msg, CkCoreState *ck)
       CmiAbort("Internal Error: Unknown-msg-type. Contact Developers.\n");
   }
   DEBUGF(("[%d,%.6lf] _numExpectInitMsgs %d CkpvAccess(_numInitsRecd)+CksvAccess(_numInitNodeMsgs) %d+%d\n",CmiMyPe(),CmiWallTimer(),_numExpectInitMsgs,CkpvAccess(_numInitsRecd),CksvAccess(_numInitNodeMsgs)));
-  CmiPrintf("[%d][%d][%d] &&&&&&& Calling checkForInitDone from _initHandler\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+  //CmiPrintf("[%d][%d][%d] &&&&&&& Calling checkForInitDone from _initHandler\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
   checkForInitDone(false); // RO ZCPY Bcast operation could still be incomplete
 }
 
@@ -1321,9 +1321,9 @@ void _sendReadonlies() {
   }
 #endif
   CmiFree(env);
-  CmiPrintf("[%d][%d][%d] RODataMsg - Sending QD message:%d\n", CmiMyPe(), CmiMyNode(), CmiMyRank(), CkNumPes() - 1);
+  //CmiPrintf("[%d][%d][%d] RODataMsg - Sending QD message:%d\n", CmiMyPe(), CmiMyNode(), CmiMyRank(), CkNumPes() - 1);
   CpvAccess(_qd)->create(CkNumPes()-1);
-  CmiPrintf("[%d][%d][%d] ****** Calling _initDone from sendReadonlines\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+  //CmiPrintf("[%d][%d][%d] ****** Calling _initDone from sendReadonlines\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
   _initDone();
 }
 

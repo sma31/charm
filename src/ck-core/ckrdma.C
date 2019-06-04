@@ -1839,7 +1839,7 @@ void readonlyGet(CkNcpyBuffer &src, CkNcpyBuffer &dest, void *refPtr) {
     if(t.child_count != 0)
       readonlyCreateOnSource(dest);
 
-    CmiPrintf("[%d][%d][%d] Issuing Rget\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+    //CmiPrintf("[%d][%d][%d] Issuing Rget\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
     zcQdIncrement();
 
     CmiIssueRget(ncpyOpInfo);
@@ -1863,7 +1863,7 @@ void readonlyGetCompleted(NcpyOperationInfo *ncpyOpInfo) {
   // When all pending RO Rdma transfers are complete
   if(CksvAccess(_numPendingRORdmaTransfers) == 0) {
 
-    CmiPrintf("[%d][%d][%d] Rget completed\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+    //CmiPrintf("[%d][%d][%d] Rget completed\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
 
     if(t.child_count != 0) {  // Intermediate Node
 
@@ -1887,7 +1887,7 @@ void readonlyGetCompleted(NcpyOperationInfo *ncpyOpInfo) {
 #if CMK_SMP
     // Send a message to my first node to signal completion
     QdCreate(1);
-    CmiPrintf("[%d][%d][%d] Sending a message to peers\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
+    //CmiPrintf("[%d][%d][%d] Sending a message to peers\n", CmiMyPe(), CmiMyNode(), CmiMyRank());
     envelope *sigEnv = _allocEnv(ROPeerCompletionMsg);
     sigEnv->setSrcPe(CkMyPe());
     CmiSetHandler(sigEnv, _roRdmaDoneHandlerIdx);
