@@ -1351,6 +1351,10 @@ void _initCharm(int unused_argc, char **argv)
 	CkpvInitialize(MsgPool*, _msgPool);
 	CkpvInitialize(CkCoreState *, _coreState);
 
+#if CMK_ONESIDED_IMPL && CMK_SMP
+  numZerocopyROops.store(0);
+#endif
+
 #if CMK_FAULT_EVAC
 #ifndef __BIGSIM__
 	CpvInitialize(char *,_validProcessors);
